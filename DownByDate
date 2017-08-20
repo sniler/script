@@ -1,0 +1,44 @@
+#!/usr/bin/python  
+#coding:utf-8
+#DownByDate.py sh600115 2014-12-29 2015-3-15  
+#DownByDate.py stock_num start_date end_date  
+
+#http://stock.gtimg.cn/data/index.php?appn=detail&action=download&c=sh600115&d=20141229  
+#sh600115_2014-12-29.txt  
+'''
+抓取股票交易记录
+'''
+import sys  
+import urllib  
+import datetime  
+
+def download_date(src_url,dest_file):  
+    download=urllib.FancyURLopener();  
+    download_page=download.open(src_url);  
+    savefile=file(dest_file,'wb+');  
+    while True:  
+        arr = download_page.read();  
+        if len(arr)==0:  
+            break;  
+        savefile.write(arr);  
+    savefile.flush();  
+    savefile.close();  
+    return  
+print sys.argv
+stock_code=sys.argv[1]  
+str_0='''http://stock.gtimg.cn/data/index.php?appn=detail&action=download&c='''  
+str_0=str_0 + stock_code + '&d='  
+date_start=datetime.datetime.strptime(sys.argv[2],'%Y-%m-%d')  
+if len(sys.argv)>3:  
+    date_end=datetime.datetime.strptime(sys.argv[3],'%Y-%m-%d')  
+else:  
+    date_end=date_start+datetime.timedelta(days=1)  
+
+while date_start<date_end:  
+    str_date=date_start.strftime('%Y%m%d')  
+    str_url=str_0+str_date  
+    #print '\n',str_url
+    str_file=stock_code + '_' + date_start.strftime('%Y-%m-%d') + '.txt'  
+    download_date(str_url,str_file)  
+    print str_file  
+    date_start=date_start+datetime.timedelta(days=1)  
