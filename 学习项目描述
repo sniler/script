@@ -1,0 +1,40 @@
+综合Python学习高级练习项目
+
+1，从腾讯网站股票最新交易数据，如：http://qt.gtimg.cn/q=sz000858；
+    获取实时资金流向，如：http://qt.gtimg.cn/q=ff_sz000858；
+    获取实时盘口，如：http://qt.gtimg.cn/q=s_pksz000858；
+    获取简要信息，如：http://qt.gtimg.cn/q=s_sz000858；     
+    周k 线数据    如：http://data.gtimg.cn/flashdata/hushen/weekly/sz000868.js
+    日k线数据     如：http://data.gtimg.cn/flashdata/hushen/daily/13/sz000750.js
+    历史数据（新浪）      如:http://biz.finance.sina.com.cn/stock/flash_hq/kline_data.php?&symbol=sz002241&end_date=20130806&begin_date=20130101symbol=sh000001&end_date=20120101
+    SOHU 搜狐财经股票数据接口  如： http://q.stock.sohu.com/hisHq?code=cn_300228&start=20130930&end=20131231&stat=1&order=D&period=d&callback=historySearchHandler&rt=jsonp
+
+    抓取股票日内交易记录 
+        如：http://stock.gtimg.cn/data/index.php?appn=detail&action=download&c=sh600115&d=20141229 
+	http://market.finance.sina.com.cn/downxls.php?date=2016-07-08&symbol=sh600900  可以得到日期为 date=2016-07-08，代码为 symbol=sh600900 的股票的成交明细，数据为 xls 格式。时间一般为当天早上 09:30 到下午 15:00，平均 5 秒一个数据。
+
+
+*,历史数据下载（CSV格式）
+下面是获取工商银行0601398，从2008年07月20日到2015年05月08日之间的历史数据，文件为CSV格式http://quotes.money.163.com/service/chddata.html?code=0601398&start=20000720&end=20150508
+
+*,财务指标下载（CSV格式）
+http://quotes.money.163.com/service/zycwzb_601398.html?type=report
+
+
+*,利润表下载（CSV格式）
+http://quotes.money.163.com/service/lrb_601398.html
+
+
+*,现金流表（CSV格式）
+http://quotes.money.163.com/service/xjllb_601398.html
+
+2，数据保存到本地数据库中，这里使用Python 自带标准库sqlite3
+3，读取数据库数据
+4，使用pyqt绘制出股票的交易统计图表
+5，数据库分析，找出交易资金流入量大，流出量小的股票
+6，晋级学习，实现股票交易
+
+http://image.sinajs.cn/newchart/daily/n/sz000619.gif   新浪日线图
+http://image.sinajs.cn/newchart/min/n/sz000619.gif     新浪实时图
+http://image.sinajs.cn/newchart/weekly/n/sz000619.gif  新浪周线图
+http://image.sinajs.cn/newchart/monthly/n/sz000619.gif 新浪月线图
