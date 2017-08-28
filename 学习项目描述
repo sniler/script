@@ -13,7 +13,7 @@
         如：http://stock.gtimg.cn/data/index.php?appn=detail&action=download&c=sh600115&d=20141229 
 	http://market.finance.sina.com.cn/downxls.php?date=2016-07-08&symbol=sh600900  可以得到日期为 date=2016-07-08，代码为 symbol=sh600900 的股票的成交明细，数据为 xls 格式。时间一般为当天早上 09:30 到下午 15:00，平均 5 秒一个数据。
     抓取当天实时交易明细
-   	http://stock.gtimg.cn/data/index.php?appn=detail&action=timeline&c=sz002790   一天中分时时间段，共划分16段
+   	http://stock.gtimg.cn/data/index.php?appn=detail&action=timeline&c=sz002790   一天中分时时间段
         http://stock.gtimg.cn/data/index.php?appn=detail&action=data&c=sz002790&p=16  股票002790交易明细第16页的是数据
 
 
