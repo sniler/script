@@ -1,0 +1,151 @@
+# -*- coding: utf-8 -*- """
+#Created on Thu Dec 15 13:57:32 2016
+#@author: four """  
+"""MACD对技术流投资者的重要性不言而喻。然而，很多资料对其详细算法都语焉不详。尤其是第一天和第二天的MACD的处理方式，很多说法有差别。今天查了查资料，终于搞清楚了其计算方法。用该方法计算理工检测，法因数控等股票MACD，和大智慧或者飞狐交易师上面显示的DIFF,DEA以及MACD完全吻合。
+关键的一点是：新股上市首日，其DIFF,DEA以及MACD都为0，因为当日不存在前一日，无法做迭代。而计算新股上市第二日的EMA时，前一日的EMA需要用收盘价（而非0）来计算。另外，需要注意，计算过程小数点后四舍五入保留4位小数，最后显示的时候四舍五入保留3位小数。
+具体计算公式及例子如下： 
+EMA（12）= 前一日EMA（12）×11/13＋今日收盘价×2/13
+EMA（26）= 前一日EMA（26）×25/27＋今日收盘价×2/27
+DIFF=今日EMA（12）- 今日EMA（26）
+DEA（MACD）= 前一日DEA×8/10＋今日DIF×2/10 
+BAR=2×(DIFF－DEA)
+对理工检测：
+20091218日：
+    新股上市，DIFF=0, DEA=0, MACD=0，收盘价55.01
+20091219日：
+    收盘价53.7
+    EMA（12）=55.01+(53.7-55.01)×2/13=54.8085   
+    EMA（26）=55.01+(53.7-55.01)×2/27=54.913  
+    DIFF=EMA（12）- EMA（26）= 54.8085 - 54.913 = -0.1045  （-0.104？）
+    DEA=0+(-0.1045)X2/10=-0.0209
+    BAR=2*((-0.1045)-(-0.0209))=-0.1672
+对法因数控：
+20080905日：
+    新股上市，DIFF=0, DEA=0, MACD=0，收盘价12.34
+20080908日：
+    收盘价11.11
+    EMA（12）=12.34+(11.11-12.34)×2/13=12.1508
+    EMA（26）=12.34+(11.11-12.34)×2/27=12.2489
+    DIFF=EMA（12）- EMA（26）= 12.1508 - 12.2489 = -0.0981
+    DEA=0+(-0.0981)X2/10=-0.01962
+    BAR=2*((-0.0981)-(-0.01962))=-0.15696
+
+Python运行效率确实不高，计算沪深两市10年来MACD日线金叉情况竟然需要运行10分钟，还是得换Java来。需要计算一下不同周期（日线，60分钟线...）低位二次金叉买入，死叉卖出的盈利和亏损情况。"""
+
+import pandas as pd
+import os ,time
+##获取地址数据     
+def get_adress_data(adress=0):
+      data=pd.read_csv(adress,sep=' ',parse_dates=True,header=None,names=['dateL','openL','highL','lowL','closeL','volL'])
+      #data['dateL']=pd.to_datetime(data.dateL)
+      return data
+#获取macd  
+def get_macd_data(data,short=0,long1=0,mid=0):
+      if short==0:
+            short=12
+      if long1==0:
+            long1=26
+      if mid==0: 
+            mid=9
+      data['sema']=pd.ewma(data['closeL'],span=short)
+      data['lema']=pd.ewma(data['closeL'],span=long1)
+      data.fillna(0,inplace=True)
+      data['data_dif']=data['sema']-data['lema']
+      data['data_dea']=pd.ewma(data['data_dif'],span=mid)
+      data['data_macd']=2*(data['data_dif']-data['data_dea'])
+      data.fillna(0,inplace=True)
+      return data[['data_dif','data_dea','data_macd']]
+def get_kdj_data(data,N=0,M=0):
+      if N==0:
+            N=9
+      if M==0:
+            M=2
+      low_list = pd.rolling_min(data['lowL'], N)
+      low_list.fillna(value=pd.expanding_min(data['lowL']), inplace=True)
+      high_list = pd.rolling_max(data['highL'],N)
+      high_list.fillna(value=pd.expanding_max(data['highL']), inplace=True)
+      rsv = (data['closeL'] - low_list) / (high_list - low_list) * 100
+      data['KDJ_K'] = pd.ewma(rsv,com=M) 
+      data['KDJ_D']=pd.ewma(data['KDJ_K'],com=M)
+      data['KDJ_J'] = 3 * data['KDJ_K'] - 2 * data['KDJ_D']
+      data.fillna(0,inplace=True)
+      return data[['KDJ_K','KDJ_D','KDJ_J']]
+def get_ma_data(data,N=0):
+      if N==0:
+            N=5
+      data['ma']=pd.rolling_mean(data['closeL'],N)
+      data.fillna(0,inplace=True)
+      return data[['ma']]
+def get_rsi_data(data,N=0):
+      if N==0:
+            N=24
+      data['value']=data['closeL']-data['closeL'].shift(1)
+      data.fillna(0,inplace=True)
+      data['value1']=data['value']
+      data['value1'][data['value1']<0]=0
+      data['value2']=data['value']
+      data['value2'][data['value2']>0]=0
+      data['plus']=pd.rolling_sum(data['value1'],N)
+      
+#----------------------------------------------------------------------
+def get_macd_jinCha():
+      """"""
+      pass
+
+stock_code_list = []
+for root , dirs, files in os.walk('history'):
+      if files:
+            for f in files:
+                  if 'daily.csv' in f:
+                        stock_code_list.append(f.split('_daily.csv')[0])
+#根据上一不得到的代码列表，遍历所有股票，将这些股票合并到一张表格all_stoc
+all_stock = pd.DataFrame()
+
+for code in stock_code_list:
+      stock_data = get_adress_data('history/'+code+'_daily.csv')
+      stock_data['code'] = code
+      print code
+      if stock_data.empty:
+            continue      
+      macd=get_macd_data(stock_data,5,10,9)
+      #print stock_data.tail(1),""
+      #计算MACD指标金叉，死叉情况
+      #stock_data[u'MACD_金叉死叉'] = ''
+      #macd_position = stock_data['data_dif'] > stock_data['data_dea']      
+      #stock_data.loc[macd_position[(macd_position == True) & (macd_position.shift() == False)].index, u'MACD_金叉死叉'] = u'金叉'
+      #stock_data.loc[macd_position[(macd_position == False) & (macd_position.shift() == True)].index, u'MACD_金叉死叉'] = u'死叉'
+      
+      #通过复权价格计算接下来几个交易日的收益率
+      #for n in [1, 2, 3, 5, 10, 20]:
+            #stock_data[u'接下来%d个股交易日涨跌幅'%n] = stock_data['closeL'].shift(-1*n) / stock_data['closeL'] - 1.0
+      stock_data.dropna(how='any', inplace=True)  #删除所有有空值的数据行      
+      
+      #筛选出MACD金叉的数据，并将这些数据合并到all_stock中
+      if stock_data.shape[0]==0:
+            continue
+      #print stock_data['dateL'].loc[stock_data.shape[0]-1] 
+      
+      #print  time.strftime('%Y%m%d', time.strptime(str(stock_data.iloc[-1][0]),"%Y%m%d")) > time.strftime('%Y%m%d', time.strptime('20170801',"%Y%m%d"))   # f['dateL'].loc[f.shape[0]-1] 获取最后一个对象
+      #MACD_jinCha = stock_data[(stock_data[u'MACD_金叉死叉'] == u'金叉')]
+      #MACD_jinCha =stock_data[(stock_data['data_macd'] > (-0.01))]
+      
+      #print (MACD_jinCha.dateL >= 20170710)
+      #ACD_jinCha = MACD_jinCha[MACD_jinCha.dateL >= 201708020]
+      #MACD_jinCha = stock_data[(str(stock_data.iloc[-1][0]) > time.strftime('%Y%m%d', time.strptime('20170801',"%Y%m%d")))]
+      #print stock_data.tail(1),"))))))))))))))))))))))))))))))"
+      #print stock_data.loc[stock_data['data_macd'].index[-1],['dateL','data_macd']]
+      #if MACD_jinCha.empty:
+            #continue
+      #print MACD_jinCha[['data_macd',"dateL"]],'+++++++++++++++++++++'
+      #p = (MACD_jinCha['data_macd']>=(0.0))
+      MACD_jinCha = stock_data.tail(1)
+      MACD_jinCha = MACD_jinCha[(MACD_jinCha['data_macd']>=(-0.005))&(MACD_jinCha['data_macd']<=(0.05))]
+      #MACD_jinCha = MACD_jinCha[(MACD_jinCha['data_macd'].shift(1)<=(0.001))]
+      all_stock = all_stock.append(MACD_jinCha.tail(1), ignore_index=True) 
+      #print MACD_jinCha.tail()    ,'>>>>>>>>>>>>>>>>' 
+print u'历史上所有股票出现MACD金叉的次数为%d，这些股票在: ' % all_stock.shape[0]
+all_stock.to_csv(u'自选股/out.csv',encoding='gb2312')
+#for n in [1, 2, 3, 5, 10, 20]:
+      #print u'金叉之后的%d个交易日内,' % n,
+      #print u'平均涨幅%.2f%%,' % (all_stock[u'接下来%d个股交易日涨跌幅'%n].mean() * 100)
+      #print u'其中上涨股票的比例是%.2f%%.' % (all_stock[all_stock[u'接下来%d个股交易日涨跌幅'%n]>0].shape[0] / float(all_stock.shape[0]) * 100)
