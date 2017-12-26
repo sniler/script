@@ -3,14 +3,14 @@
 
 
 __author__  = 'Zhang Shengxin '
-__version__ = '2.0'
+__version__ = '2.1'
 __status__  = "beta"
 __date__    = "2013/11/12"
 __using__   = '''from EditBlendShapeTool import EditBlendTwoCorrectMesh
 reload(EditBlendTwoCorrectMesh)
 EditBlendTwoCorrectMesh.editBlendTwoCorrectMesh().ui()
 '''
-__updata__ = '多层叠加'
+__updata__ = '多层叠加 2017/12/26 environ 2017'
 
 
 import maya.cmds as cmds
@@ -406,7 +406,17 @@ class editBlendTwoCorrectMesh():
             value = 6000/6000.0
         else:
             value = (item-5000)/1000.0
-        return value    
+        return value
+    #----------------------------------------------------------------------
+    def __checkInbetween(self, itemName , value):
+        """"""
+        for i in getCrGrpItem(self.BlendNode)[itemName][1]:
+            if self.itemToValue(i) == value:
+                print value  
+                return True
+            else:
+                print None
+                return False
     #----------------------------------------------------------------------
     def inputTargetIDWin(self, Targetlist="self.widow['1stTerm']"):
         """创建目标体ID控件"""
@@ -485,28 +495,52 @@ class editBlendTwoCorrectMesh():
         self.setMirrMesh(self.currSelItemL)
         self.createInbtweenMenu(self.widow['1stTerm'])
         #om.MGlobal.displayInfo(self.currSelItemL)
-        if cmds.objExists(self.currSelItemL + '_sculpt'):
-            cmds.menuItem(self.widow['menuS1'], e=True, en = False)
-            cmds.menuItem(self.widow['menuB1'] , e = True, en = True)
-            cmds.button(self.widow['createSculpt'] , e=True, en = False)
-            cmds.button(self.widow['building'] , e=True, en = True)
-            self.SculptM =  self.currSelItemL + '_sculpt'
-            if cmds.menuItem(self.widow['menuB1'] , e = True, en = True):
-                cmds.checkBox(self.widow['checkBoxMirr'], e = True, ed = True)
-            else:
-                cmds.checkBox(self.widow['checkBoxMirr'], e = True, ed = False)
-        else:
-            cmds.menuItem(self.widow['menuS1'], e=True, en = True)
-            cmds.menuItem(self.widow['menuB1'] , e = True, en = False)
-            cmds.button(self.widow['createSculpt'] , e=True, en = True)
-            cmds.button(self.widow['building'] , e=True, en = False)            
-            if cmds.menuItem(self.widow['menuB1'] , q = True, en = True):
-                cmds.checkBox(self.widow['checkBoxMirr'], e = True, ed = False)
-            else:
-                if self.targetM != None:
+        if mayaEnviron != '2017':
+            if cmds.objExists(self.currSelItemL + '_sculpt'):
+                cmds.menuItem(self.widow['menuS1'], e=True, en = False)
+                cmds.menuItem(self.widow['menuB1'] , e = True, en = True)
+                cmds.button(self.widow['createSculpt'] , e=True, en = False)
+                cmds.button(self.widow['building'] , e=True, en = True)
+                self.SculptM =  self.currSelItemL + '_sculpt'
+                if cmds.menuItem(self.widow['menuB1'] , e = True, en = True):
                     cmds.checkBox(self.widow['checkBoxMirr'], e = True, ed = True)
                 else:
                     cmds.checkBox(self.widow['checkBoxMirr'], e = True, ed = False)
+            else:
+                cmds.menuItem(self.widow['menuS1'], e=True, en = True)
+                cmds.menuItem(self.widow['menuB1'] , e = True, en = False)
+                cmds.button(self.widow['createSculpt'] , e=True, en = True)
+                cmds.button(self.widow['building'] , e=True, en = False)            
+                if cmds.menuItem(self.widow['menuB1'] , q = True, en = True):
+                    cmds.checkBox(self.widow['checkBoxMirr'], e = True, ed = False)
+                else:
+                    if self.targetM != None:
+                        cmds.checkBox(self.widow['checkBoxMirr'], e = True, ed = True)
+                    else:
+                        cmds.checkBox(self.widow['checkBoxMirr'], e = True, ed = False)
+        else:
+            tgtName = self.__getBlendShapeEidtHUd()
+            if self.currSelItemL == tgtName:
+                cmds.menuItem(self.widow['menuS1'], e=True, en = False)
+                cmds.menuItem(self.widow['menuB1'] , e = True, en = True)
+                cmds.button(self.widow['createSculpt'] , e=True, en = False)
+                cmds.button(self.widow['building'] , e=True, en = True)
+                if cmds.menuItem(self.widow['menuB1'] , e = True, en = True):
+                    cmds.checkBox(self.widow['checkBoxMirr'], e = True, ed = True)
+                else:
+                    cmds.checkBox(self.widow['checkBoxMirr'], e = True, ed = False)
+            else:
+                cmds.menuItem(self.widow['menuS1'], e=True, en = True)
+                cmds.menuItem(self.widow['menuB1'] , e = True, en = False)
+                cmds.button(self.widow['createSculpt'] , e=True, en = True)
+                cmds.button(self.widow['building'] , e=True, en = False)
+                if cmds.menuItem(self.widow['menuB1'] , q = True, en = True):
+                    cmds.checkBox(self.widow['checkBoxMirr'], e = True, ed = False)
+                else:
+                    if self.targetM != None:
+                        cmds.checkBox(self.widow['checkBoxMirr'], e = True, ed = True)
+                    else:
+                        cmds.checkBox(self.widow['checkBoxMirr'], e = True, ed = False)
     #----------------------------------------------------------------------
     def initRItem(self):
         """初始化R"""
@@ -664,12 +698,28 @@ class editBlendTwoCorrectMesh():
                 cmds.select(self.SculptM)
             else:
                 #sculptTarget -e -target 0 blendShape1;
-                if args[0] < 1.0 and 0.0 < args[0]:
-                    #blendShape -e  -ib -t pCube1 0 pCube2 0.5 blendShape1;
-                    targetMesh =  cmds.duplicate(getOrigMesh(self.mesh, '%s_in' % self.mesh, (0, 0, 0)))
-                    self.__addInbetween(targetMesh, ID, value)
-                if args[0] != 0.0:
-                    cmds.sculptTarget(self.BlendNode, e=True, target = getCrGrpItem(self.BlendNode)[name][0])
+                ID = getCrGrpItem(self.BlendNode)[name][0]
+                if args != ():
+                    cmds.floatSliderGrp(self.widow['floatSliderGrpL'], e= 1, value= args[0])
+                    cmds.setAttr(self.BlendNode + '.' + name, args[0])
+                    cmds.sculptTarget(self.BlendNode, e=True, target = ID, ibw = args[0])
+                else:
+                    value = cmds.floatSliderGrp(self.widow['floatSliderGrpL'] , q = True, v = True)
+                    #print value
+                    if value < 1.0 and 0.0 < value:
+                        #blendShape -e  -ib -t pCube1 0 pCube2 0.5 blendShape1;
+                        if  self.__checkInbetween(name, value) == False:
+                            #print "run __checkInbetween"
+                            #@checkTopo - If check topology;
+                            #@heroTargetIndex - Hero target index to add the in-between target;
+                            #@inBetweenWeight - Maximum influence weight of the in-between target;
+                            #@inBetweenType   - The type of in-between target to create, relative/absolute to hero target;
+                            #                   0 absolute, 1 relative;                            
+                            Melstring = "string $targetShapes[]; doBlendShapeAddInBetweenTarget {blendShape} {checkTopo} {targetIndex} {inBetweenWeight} {inBetweenType} $targetShapes;".format(blendShape = self.BlendNode, checkTopo = 1, targetIndex = ID,inBetweenWeight = value, inBetweenType = 0)
+                            mel.eval(Melstring)
+                            cmds.sculptTarget(self.BlendNode, e=True, target = ID, ibw = value)
+                    if value != 0.0:
+                        cmds.sculptTarget(self.BlendNode, e=True, target = ID, ibw = value)
             cmds.button(self.widow['createSculpt'], e =1 , enable=0)
             cmds.button(self.widow['building'], e =1 , enable=1)
             cmds.menuItem(self.widow['menuS1'], e=True, en = False)
@@ -771,11 +821,11 @@ class editBlendTwoCorrectMesh():
                             #cmds.setAttr('%s.template'%mesh, 1)
                             cmds.button(self.widow['createSculpt'], e =1 , enable=0)
                             cmds.menuItem('refresh', e=1, en=0)
-                            cmds.button(self.widow['building'], e =1 , enable=1)                
+                            cmds.button(self.widow['building'], e =1 , enable=1)
                             cmds.select(self.SculptM)
                             self.setTextScrListCmd()
                             cmds.textScrollList(self.widow['1stTerm'], e=1 ,  deselectAll=True)
-                            cmds.textScrollList(self.widow['2stTerm'], e=1 ,  deselectAll=True)                    
+                            cmds.textScrollList(self.widow['2stTerm'], e=1 ,  deselectAll=True)
                             cmds.textScrollList(self.widow['1stTerm'], e=1 ,  si=listL)
                             cmds.textScrollList(self.widow['2stTerm'], e=1 ,  si=listR)
                             cmds.menuItem(self.widow['menuS'], e=1, enable =0)
@@ -790,7 +840,8 @@ class editBlendTwoCorrectMesh():
         cmds.undoInfo(closeChunk=False)
     def __addInbetween(self, targetMesh, ID, value):
         #blendShape -e  -ib -t pCube1 0 pCube2 0.5 blendShape1;
-        cmds.blendShape(self.BlendNode, e=True, ib=True, t=(targetMesh, ID, self.mesh, value))
+        #print targetMesh, ID, value
+        cmds.blendShape(self.BlendNode, e=True, ib=True, t=(self.mesh, ID, targetMesh, value))
     #----------------------------------------------------------------------
     def __getBlendShapeEidtHUd(self):
         """"""
@@ -962,28 +1013,29 @@ class editBlendTwoCorrectMesh():
             name = cmds.textScrollList(self.widow['1stTerm'], q = 1, si=1)[0]
             coritem = getCrGrpItem(self.BlendNode, name)[name][0]
             #cmds.setAttr(self.BlendNode +'.' + name, 1)
-            if self.SculptM == None:
-                self.SculptM =  name + '_sculpt'
-            #print self.BlendNode, self.mesh, self.SculptM, name, coritem
-            cmdString1 = 'python("from EditBlendShapeTool import replaceOraddBlendShapeItem as reBlendshape");'
-            cmdString = 'python("reBlendshape.replaceOrAddBlendShapeItem("+"\\"{0}\\""+", \\"{1}\\""+", \\"{2}\\""+", \\"{3}\\""+", {4})");'.format(self.BlendNode, self.mesh, self.SculptM, name, coritem)
-            mel.eval(cmdString1)
-            print 'cmdString1>>>', cmdString1, '\n', 'cmdString>>> ', cmdString
-            mel.eval(cmdString)
-            #reBlendshape.replaceOrAddBlendShapeItem(self.BlendNode, self.mesh, self.SculptM, name, coritem)            
-            if menS1 != True:
-                cmds.menuItem(self.widow['menuS1'], e = True, en = True)
-                cmds.menuItem(self.widow['menuB1'], e = True, en = False)
-                cmds.setAttr(self.mesh + '.visibility', 1)
-                cmds.setAttr(self.SculptM + '.visibility', 0)
-                cmds.delete(self.SculptM)
-                self.SculptM = None
-                cmds.select(cl = True)
-                cmds.button(self.widow['createSculpt'], e =1 , enable=1)
-                #cmds.menuItem('refresh', e=1, en=1)
-                cmds.button(self.widow['building'], e =1 , enable=0)
+            if mayaEnviron != '2017':
+                if self.SculptM == None:
+                    self.SculptM =  name + '_sculpt'
+                #print self.BlendNode, self.mesh, self.SculptM, name, coritem
+                reBlendshape.replaceOrAddBlendShapeItem(self.BlendNode, self.mesh, self.SculptM, name, coritem)
+                if menS1 != True:
+                    cmds.menuItem(self.widow['menuS1'], e = True, en = True)
+                    cmds.menuItem(self.widow['menuB1'], e = True, en = False)
+                    cmds.setAttr(self.mesh + '.visibility', 1)
+                    cmds.setAttr(self.SculptM + '.visibility', 0)
+                    cmds.delete(self.SculptM)
+                    self.SculptM = None
+                    cmds.select(cl = True)
+                    cmds.button(self.widow['createSculpt'], e =1 , enable=1)
+                    #cmds.menuItem('refresh', e=1, en=1)
+                    cmds.button(self.widow['building'], e =1 , enable=0)
+                else:
+                    pass
             else:
-                pass
+                value = cmds.floatSliderGrp(self.widow['floatSliderGrpL'] , q = True, v = True)
+                cmds.sculptTarget(self.BlendNode, e=True, target = coritem, ibw = value)
+                cmds.button(self.widow['createSculpt'], e =1 , enable=1)
+                cmds.button(self.widow['building'], e =1 , enable=0)
         elif listType == 2:
             om.MGlobal.displayInfo('buidingCmd: ListR')
             if menS2 != True:
