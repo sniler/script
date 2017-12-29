@@ -4,7 +4,7 @@
 
 
 __author__  = 'Zhang Shengxin -- <EMail: 360418420@qq.com || zsxaa--12@163.com> '
-__version__ = '1.0'
+__version__ = '2.0'
 __status__  = "beta"
 __date__    = "2014/8/1"
 __using__   = """"""
@@ -100,17 +100,18 @@ class eyeRig(object):
                            ]
         self.locatorList =  []
         self.name =  None
-        self.eyeRigGrp =  "|eyeRigGrp"
-        self.eyeCtrlGrp  =  "|eyeCtrlGrp"
-        self.eyelipRigGrp =  "|eyelipRigGrp"
-        self.eyeAim_zero =  "|eyeAim_zero"
-        self.aimUpObjGrp =  "|eyeAimUpObjGrp"
+        self.eyeRigGrp =  "eyeRigGrp"
+        self.eyeCtrlGrp  =  "eyeCtrlGrp"
+        self.eyelipRigGrp =  "eyelipRigGrp"
+        self.eyeAim_zero =  "eyeAim_zero"
+        self.aimUpObjGrp =  "eyeAimUpObjGrp"
         self.distance = None
         self.aimlist = []
         self.ctrlList =  []
         self.lockAttr =  ['tx', 'ty', 'tz', 'rx', 'ry', 'rz', 'sx', 'sy', 'sz', 'v']
         self.locatorListRestParent = []#[(None, None), (None, None)]
         self.length =  None
+        self.eyeLocatorAim = []
     #----------------------------------------------------------------------
     def setLength(self):
         """"""
@@ -146,12 +147,15 @@ class eyeRig(object):
                 mc.setAttr('%s.r%s' % (i[0], x), l=True , k=False, channelBox=False)
         
         self.setLoactor([eyeLocatorL, eyeLocatorR])
+        self.eyeLocatorAim.append(eyeLocatorLAim)
+        self.eyeLocatorAim.append(eyeLocatorRAim)
         mc.addAttr([eyeLocatorL, eyeLocatorR], longName = 'length', k = True, dv = 5, at = 'float')
         
     #----------------------------------------------------------------------
     def createCvCtrl(self, name):
         """"""
         self.setLength()
+        #curve -d 1 -p 0 0 0 -p 0 0 7 -p -1 0 6 -p 0 0 7 -p 1 0 6 -p 0 0 7 -p 0 1 6 -p 0 0 7 -p 0 -1 6 -k 0 -k 1 -k 2 -k 3 -k 4 -k 5 -k 6 -k 7 -k 8 ;
         cv =  mc.curve(n=name+"_cv", d = 1, p = [(0, 0, 0), (0, 0, self.length), (-(self.length*0.1), 0, (self.length-(self.length*0.1))), (0, 0, self.length), ((self.length*0.1), 0, (self.length-(self.length*0.1))), (0, 0, self.length), (0, (self.length*0.1), (self.length-(self.length*0.1))), (0, 0, self.length), (0, -(self.length*0.1), (self.length-(self.length*0.1)))], k = [0, 1, 2, 3, 4, 5, 6, 7, 8 ])
         shapes =  mc.listRelatives(cv, c=1)
         #shapes =  mc.rename(shapes[0], name+"_cvShape")
@@ -175,7 +179,7 @@ class eyeRig(object):
     #----------------------------------------------------------------------
     def __getCtrlDdiatance(self):
         """"""
-        
+        pass
         
     #----------------------------------------------------------------------
     def addAttributes(self, ctrl):
@@ -375,11 +379,14 @@ class eyeRig(object):
         if mirror == "L" or  mirror == "l":
             pos =  mc.xform(self.locatorList[0], q=True, ws=True, t=True)
             mc.xform(self.locatorList[1], ws=True, t=[pos[0]*-1, pos[1], pos[2]])
+            
             ro = mc.xform(self.locatorList[0], q=True, ws=True, ro=True)
             mc.xform(self.locatorList[1], ws=True, ro=[ro[0], ro[1]*-1, ro[2]*-1])
-            mc.setAttr(self.locatorList[1]+'.length', mc.getAttr(self.locatorList[0] + '.length'))
             
+            mc.setAttr(self.locatorList[1]+'.length', mc.getAttr(self.locatorList[0] + '.length'))
+    
             x =  mc.xform('%s_aim' % self.locatorList[0], q=1, ws=1, t=1)
+            print x
             mc.xform('%s_aim' % self.locatorList[1], ws=True, t=[x[0]*-1, x[1], x[2]])            
             #sys.stdout.write("Mirror L")
         if mirror == "R" or  mirror == "r":
@@ -388,10 +395,10 @@ class eyeRig(object):
             ro = mc.xform(self.locatorList[1], q=True, ws=True, ro=True)
             mc.xform(self.locatorList[0], ws=True, ro=[ro[0], ro[1]*-1, ro[2]*-1])
             mc.setAttr(self.locatorList[0]+'.length', mc.getAttr(self.locatorList[1] + '.length'))
-            
+    
             x =  mc.xform('%s_aim' % self.locatorList[1], q=1, ws=1, t=1)
             mc.xform('%s_aim' % self.locatorList[0], ws=True, t=[x[0]*-1, x[1], x[2]])
-
+    
             #sys.stdout.write("Mirror R")
 
     #----------------------------------------------------------------------
@@ -401,7 +408,7 @@ class eyeRig(object):
         for name in  self.locatorList:
             mc.delete(mc.listRelatives(name, c=True, type='constraint'))
             for x in ['x', 'y', 'z']:
-                mc.setAttr('%s.r%s' % (name, x), k=True, ch=True, l=False)
+                mc.setAttr('%s.r%s' % (name, x), k=True, ch=True, l=False)            
             ctrl , aimCtrl =  self.createCvCtrl(name.replace("Loc", "ctrl"))
             mc.setAttr(name+'.v', 0)
             #print name
@@ -414,15 +421,16 @@ class eyeRig(object):
             mc.xform(zero,os=1,piv= [0, 0, 0])
             
             mc.select(name.replace('Loc', 'Loc_aim'), r=True)
-            #mc.select(cl=True)
+           # mc.select(ctrl, r=True)
             pupilla =  mc.joint(n=name.replace('Loc', 'pupilla'))
-            #print name.replace('Loc', 'Loc_aim')
-            #mc.delete(mc.pointConstraint(name.replace('Loc', 'Loc_aim'), pupilla, mo=False, w=1))
-            mc.parent(pupilla, ctrl)
+            mc.parent(pupilla,w=True)
+            #mc.parent(pupilla, ctrl)
             mc.setAttr('%s.r' % pupilla, 0, 0, 0)
             mc.setAttr('%s.jo' % pupilla, 0, 0, 0)
-            #mc.delete(mc.listRelatives(name.replace('Loc', 'Loc_aim'), p=True))
-
+            #mc.delete(mc.listRelatives(name.replace('Loc', 'Loc_aim'),p=True)[0])
+            #mc.setAttr(pupilla + '.tz', 0.5)
+          
+            
             #aim
             aimzero =  mc.group(aimCtrl, n = "{0}_zero".format(name.replace("Loc", "aim")))
             mc.xform(aimzero,os=1,piv= [0, 0, 0])
@@ -473,13 +481,18 @@ class eyeRig(object):
             
             if mc.objExists(self.aimUpObjGrp):
                 mc.parent(aimUpLocator, self.aimUpObjGrp)
+                for a in self.eyeLocatorAim:
+                    p = mc.listRelatives(a, p = True)[0]
+                    mc.parent(p, self.aimUpObjGrp)
             else:
                 self.aimUpObjGrp =  mc.group(aimUpLocator, n=self.aimUpObjGrp)
             
             #parent loc
             mc.parent(name, ctrl)
+            mc.parent(pupilla, ctrl)
             self.aimlist.append(aimzero)
             self.ctrlList.append(zero)
+            
             
             self.addAttributes(ctrl)
             self.connectUpperEye(ctrl, drv, upperlip, lowlip, name)
@@ -514,8 +527,8 @@ class eyeRig(object):
             else:
                 mc.setAttr("{0}.{1}".format(self.aimUpObjGrp, x), 0)
                 mc.setAttr("{0}.{1}".format(self.aimUpObjGrp, x), lock=True, k=False)
-        mc.undoInfo(closeChunk=True)
         
+        mc.undoInfo(closeChunk=True)
     #----------------------------------------------------------------------
     def reset(self, *args):
         """"""
@@ -524,6 +537,10 @@ class eyeRig(object):
                 mc.parent(x[0], x[1])
             else:
                 mc.parent(x[0], w=True)
+        for a, l in zip(self.eyeLocatorAim, self.locatorListRestParent):
+            mc.parent(mc.listRelatives(a, p = True)[0], w = True)
+            mc.aimConstraint(a, l[0], offset = (0, 0, 0), aimVector = (0, 0, 1), worldUpType='vector', worldUpVector=(0, 1, 0), w=1)
+            mc.setAttr(l[0] + '.v', 1)
         mc.delete(self.eyeRigGrp)
     #----------------------------------------------------------------------
     def setLoactor(self, locatorList):
@@ -572,7 +589,7 @@ class eyeRigUI(object):
         pass
     #----------------------------------------------------------------------
     def show(self):
-        """""" 
+        """"""
         self.createUi()
         mc.showWindow(self.window)
     #----------------------------------------------------------------------
