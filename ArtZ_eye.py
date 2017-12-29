@@ -150,7 +150,15 @@ class eyeRig(object):
         self.eyeLocatorAim.append(eyeLocatorLAim)
         self.eyeLocatorAim.append(eyeLocatorRAim)
         mc.addAttr([eyeLocatorL, eyeLocatorR], longName = 'length', k = True, dv = 5, at = 'float')
-        
+        mc.addAttr([eyeLocatorL, eyeLocatorR], longName = 'shapeScale', k = True, dv = 1, at = 'float')
+        for x in [eyeLocatorL, eyeLocatorR]:
+            self.__connectShapeLocalScale(x, targetList=[mc.listRelatives(x, s = True)[0], mc.listRelatives(x + '_aim', s = True)[0]])
+    #----------------------------------------------------------------------
+    def __connectShapeLocalScale(self, source , targetList = []):
+        """"""
+        for t in targetList:
+            for x in ['x', 'y', 'z']:
+                mc.connectAttr('%s.shapeScale' % source, '%s.ls%s' % (t, x), f = True)
     #----------------------------------------------------------------------
     def createCvCtrl(self, name):
         """"""
@@ -384,9 +392,9 @@ class eyeRig(object):
             mc.xform(self.locatorList[1], ws=True, ro=[ro[0], ro[1]*-1, ro[2]*-1])
             
             mc.setAttr(self.locatorList[1]+'.length', mc.getAttr(self.locatorList[0] + '.length'))
+            mc.setAttr(self.locatorList[1]+'.shapeScale', mc.getAttr(self.locatorList[0] + '.shapeScale'))
     
             x =  mc.xform('%s_aim' % self.locatorList[0], q=1, ws=1, t=1)
-            print x
             mc.xform('%s_aim' % self.locatorList[1], ws=True, t=[x[0]*-1, x[1], x[2]])            
             #sys.stdout.write("Mirror L")
         if mirror == "R" or  mirror == "r":
@@ -395,6 +403,7 @@ class eyeRig(object):
             ro = mc.xform(self.locatorList[1], q=True, ws=True, ro=True)
             mc.xform(self.locatorList[0], ws=True, ro=[ro[0], ro[1]*-1, ro[2]*-1])
             mc.setAttr(self.locatorList[0]+'.length', mc.getAttr(self.locatorList[1] + '.length'))
+            mc.setAttr(self.locatorList[0]+'.shapeScale', mc.getAttr(self.locatorList[1] + '.shapeScale'))
     
             x =  mc.xform('%s_aim' % self.locatorList[1], q=1, ws=1, t=1)
             mc.xform('%s_aim' % self.locatorList[0], ws=True, t=[x[0]*-1, x[1], x[2]])
@@ -437,7 +446,7 @@ class eyeRig(object):
             z =  mc.getAttr("{0}.boundingBoxMax".format(zero))[0][2]
             z1 =  mc.getAttr("{0}.boundingBoxMax".format(aimCtrl))[0][2]
             
-            mc.xform(aimzero, ws=True, t=(pos[0], pos[1], z+z1))
+            mc.xform(aimzero, ws=True, t=(pos[0], pos[1], z+z1 + (z+z1) * 0.1))
             mc.parent(aimzero, zero)
             for x in  ['tx', 'ty', 'rx', 'ry', 'rz']:
                 mc.setAttr(aimzero+"."+x, 0)
